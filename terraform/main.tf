@@ -1,18 +1,28 @@
 terraform {
-  required_version = ">= 1.5.0"
 
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 4.0"
+      version = "~> 4.13.0"
     }
   }
 }
 
+# -----------------------------
+# PROVIDER
+# -----------------------------
+
 provider "azurerm" {
   features {}
+  subscription_id = "e397672c-2118-4f8c-918d-90f1bdb9bc73"
+}
 
-  use_oidc = true
+# -----------------------------
+# VARIABLE
+# -----------------------------
+
+variable "ssh_public_key" {
+  type = string
 }
 
 # -----------------------------
@@ -55,15 +65,15 @@ resource "azurerm_public_ip" "pip" {
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Static"
-
-  sku = "Standard"
+  sku                 = "Standard"
 }
 
 # -----------------------------
-# Network Security Group
+# NSG
 # -----------------------------
 
 resource "azurerm_network_security_group" "nsg" {
+
   name                = "linux-nsg"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
@@ -86,6 +96,7 @@ resource "azurerm_network_security_group" "nsg" {
 # -----------------------------
 
 resource "azurerm_network_interface" "nic" {
+
   name                = "linux-nic"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
@@ -99,19 +110,30 @@ resource "azurerm_network_interface" "nic" {
 }
 
 # -----------------------------
-# Associate NSG to NIC
+# NSG Association
 # -----------------------------
 
 resource "azurerm_network_interface_security_group_association" "assoc" {
+
   network_interface_id      = azurerm_network_interface.nic.id
   network_security_group_id = azurerm_network_security_group.nsg.id
 }
 
 # -----------------------------
-# Linux VM from SIG Image
+# CUSTOM IMAGE
+# -----------------------------
+
+data "azurerm_image" "custom" {
+  name                = "ubuntu-docker-nginx"
+  resource_group_name = "rg-canada-prod"
+}
+
+# -----------------------------
+# Linux VM
 # -----------------------------
 
 resource "azurerm_linux_virtual_machine" "vm" {
+
   name                = "linux-custom-vm"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
@@ -127,21 +149,19 @@ resource "azurerm_linux_virtual_machine" "vm" {
 
   admin_ssh_key {
     username   = "azureuser"
-    public_key = file("~/.ssh/id_rsa.pub")
+    public_key = var.ssh_public_key
   }
 
-  source_image_id = "/subscriptions/e397652c-2118-4f8c-918d-90f1bdb9bc73/resourceGroups/rg-canada-prod/providers/Microsoft.Compute/galleries/canadaProdSIG/images/ubuntu-docker-nginx/versions/1.0.0"
+  source_image_id = data.azurerm_image.custom.id
 
-  storage_os_disk {
-    name              = "myosdisk1"
-    caching           = "ReadWrite"
-    create_option     = "FromImage"
-    managed_disk_type = "Standard_LRS"
-}
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
 }
 
 # -----------------------------
-# Outputs
+# OUTPUT
 # -----------------------------
 
 output "public_ip" {
