@@ -46,19 +46,24 @@ resource "azurerm_network_interface" "nic" {
     public_ip_address_id          = azurerm_public_ip.pip.id
   }
 }
-variable "ssh_public_key" {}
+
+variable "ssh_public_key" {
+  type        = string
+  description = "The content of your id_rsa.pub file"
+}
+
 resource "azurerm_linux_virtual_machine" "vm" {
   name                = "custom-vm"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   size                = "Standard_B2s"
-
-  admin_username = "azureuser"
+  admin_username      = "azureuser"
 
   network_interface_ids = [
     azurerm_network_interface.nic.id
   ]
-# The os_disk MUST stay inside the resource block
+
+  # This block is now correctly placed and formatted
   os_disk {
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
