@@ -132,10 +132,12 @@ resource "azurerm_linux_virtual_machine" "vm" {
 
   source_image_id = "/subscriptions/e397652c-2118-4f8c-918d-90f1bdb9bc73/resourceGroups/rg-canada-prod/providers/Microsoft.Compute/galleries/canadaProdSIG/images/ubuntu-docker-nginx/versions/1.0.0"
 
-  os_disk {
-    caching              = "ReadWrite"
-    storage_account_type = "Standard_LRS"
-  }
+  storage_os_disk {
+    name              = "myosdisk1"
+    caching           = "ReadWrite"
+    create_option     = "FromImage"
+    managed_disk_type = "Standard_LRS"
+}
 }
 
 # -----------------------------
