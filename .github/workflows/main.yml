@@ -1,5 +1,4 @@
 name: Packer + Terraform Pipeline
-
 on:
   push:
     branches: [ "main" ]
