@@ -1,51 +1,92 @@
 terraform {
+  required_version = ">= 1.5.0"
+
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 4.13.0"
+      version = "~> 4.0"
     }
   }
 }
 
 provider "azurerm" {
   features {}
+
   use_oidc = true
 }
 
-data "azurerm_image" "custom" {
-  name                = "ubuntu-docker-nginx"
-  resource_group_name = "rg-canada-prod"
-}
+# -----------------------------
+# Resource Group
+# -----------------------------
 
 resource "azurerm_resource_group" "rg" {
-  name     = "rg-vm-prod"
-  location = "canadacentral"
+  name     = "rg-linux-vm"
+  location = "Canada Central"
 }
+
+# -----------------------------
+# Virtual Network
+# -----------------------------
 
 resource "azurerm_virtual_network" "vnet" {
-  name                = "vm-vnet"
+  name                = "linux-vnet"
+  address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
-  address_space       = ["10.0.0.0/16"]
 }
 
+# -----------------------------
+# Subnet
+# -----------------------------
+
 resource "azurerm_subnet" "subnet" {
-  name                 = "vm-subnet"
+  name                 = "linux-subnet"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
 }
 
+# -----------------------------
+# Public IP
+# -----------------------------
+
 resource "azurerm_public_ip" "pip" {
-  name                = "vm-ip"
+  name                = "linux-pip"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Static"
-  sku                 = "Standard"
+
+  sku = "Standard"
 }
 
+# -----------------------------
+# Network Security Group
+# -----------------------------
+
+resource "azurerm_network_security_group" "nsg" {
+  name                = "linux-nsg"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+
+  security_rule {
+    name                       = "Allow-SSH"
+    priority                   = 1001
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+}
+
+# -----------------------------
+# NIC
+# -----------------------------
+
 resource "azurerm_network_interface" "nic" {
-  name                = "vm-nic"
+  name                = "linux-nic"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 
@@ -57,36 +98,50 @@ resource "azurerm_network_interface" "nic" {
   }
 }
 
-variable "ssh_public_key" {
-  description = "SSH public key for VM access"
-  type        = string
-  # REPLACE THE STRING BELOW WITH YOUR ACTUAL PUBLIC KEY
-  default     = "ssh-rsa YOUR_KEY_HERE" 
+# -----------------------------
+# Associate NSG to NIC
+# -----------------------------
+
+resource "azurerm_network_interface_security_group_association" "assoc" {
+  network_interface_id      = azurerm_network_interface.nic.id
+  network_security_group_id = azurerm_network_security_group.nsg.id
 }
 
+# -----------------------------
+# Linux VM from SIG Image
+# -----------------------------
+
 resource "azurerm_linux_virtual_machine" "vm" {
-  name                = "custom-vm"
-  location            = azurerm_resource_group.rg.location
+  name                = "linux-custom-vm"
   resource_group_name = azurerm_resource_group.rg.name
-  size                = "Standard_B2s"
+  location            = azurerm_resource_group.rg.location
+  size                = "Standard_D2s_v5"
 
   admin_username = "azureuser"
+
+  disable_password_authentication = true
 
   network_interface_ids = [
     azurerm_network_interface.nic.id
   ]
 
-  source_image_id = data.azurerm_image.custom.id
-
   admin_ssh_key {
     username   = "azureuser"
-    public_key = var.ssh_public_key
+    public_key = file("~/.ssh/id_rsa.pub")
   }
 
-  disable_password_authentication = true
+  source_image_id = "/subscriptions/e397652c-2118-4f8c-918d-90f1bdb9bc73/resourceGroups/rg-canada-prod/providers/Microsoft.Compute/galleries/canadaProdSIG/images/ubuntu-docker-nginx/versions/1.0.0"
 
   os_disk {
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
   }
+}
+
+# -----------------------------
+# Outputs
+# -----------------------------
+
+output "public_ip" {
+  value = azurerm_public_ip.pip.ip_address
 }
