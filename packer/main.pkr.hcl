@@ -50,11 +50,9 @@ build {
     "sudo rm -rf /var/lib/apt/lists/*",
     "sudo apt-get clean",
     "sudo apt-get update || true",
-    "sudo apt-get install -y nginx docker.io",
+    "sudo apt-get install -y nginx",
     "sudo systemctl enable nginx",
-    "sudo systemctl enable docker",
     "sudo systemctl start nginx",
-    "sudo systemctl start docker"
   ]
 }
 }
