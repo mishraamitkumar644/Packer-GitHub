@@ -1,5 +1,4 @@
 terraform {
-
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
@@ -59,7 +58,7 @@ resource "azurerm_public_ip" "pip" {
   name                = "vm-ip"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
-  allocation_method   = "Dynamic"
+  allocation_method   = "Static" # Dynamic is deprecated for many SKU types; Static is safer
 }
 
 #-------------------------
@@ -94,16 +93,16 @@ resource "azurerm_linux_virtual_machine" "vm" {
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   size                = "Standard_B2s"
-
-  admin_username = "azureuser"
-
+  admin_username      = "azureuser"
   network_interface_ids = [
     azurerm_network_interface.nic.id
   ]
 
-  # Correct syntax for AzureRM provider >= 3.x
-  os_disk_caching              = "ReadWrite"
-  os_disk_storage_account_type = "Standard_LRS"
+  # THIS IS THE FIX: Wrap disk settings in the os_disk block
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
 
   source_image_id = data.azurerm_image.custom.id
 
