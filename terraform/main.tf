@@ -46,7 +46,7 @@ resource "azurerm_network_interface" "nic" {
     public_ip_address_id          = azurerm_public_ip.pip.id
   }
 }
-
+variable "ssh_public_key" {}
 resource "azurerm_linux_virtual_machine" "vm" {
   name                = "custom-vm"
   location            = azurerm_resource_group.rg.location
@@ -63,8 +63,11 @@ resource "azurerm_linux_virtual_machine" "vm" {
 
   admin_ssh_key {
     username   = "azureuser"
-    public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQXXXXXXXXXXXX YOUR_PUBLIC_KEY_HERE"
+    public_key = var.ssh_public_key
   }
+
+  disable_password_authentication = true
+}
 
   os_disk {
     caching              = "ReadWrite"
