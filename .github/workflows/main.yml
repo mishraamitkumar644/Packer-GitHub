@@ -69,6 +69,6 @@ jobs:
         terraform init
 
     - name: Terraform Apply
-      run: |
-        cd terraform
-        terraform apply -auto-approve
+      run: terraform apply -auto-approve
+      env:
+        TF_VAR_ssh_public_key: ${{ secrets.TF_SSH_PUBLIC_KEY }}
