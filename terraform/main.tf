@@ -85,20 +85,18 @@ variable "ssh_public_key" {
   type        = string
 }
 
-#-------------------------
-# LINUX VIRTUAL MACHINE
-#-------------------------
 resource "azurerm_linux_virtual_machine" "vm" {
   name                = "custom-vm"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   size                = "Standard_B2s"
-  admin_username      = "azureuser"
+
+  admin_username = "azureuser"
+
   network_interface_ids = [
     azurerm_network_interface.nic.id
   ]
 
-  # THIS IS THE FIX: Wrap disk settings in the os_disk block
   os_disk {
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
