@@ -11,7 +11,50 @@ permissions:
 
 jobs:
 
+  # -----------------------------
+  # 1. SIG SETUP (NEW JOB)
+  # -----------------------------
+  sig-setup:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Azure Login using OIDC
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Create Resource Group
+      run: |
+        az group create \
+          --name rg-canada-prod \
+          --location canadacentral
+
+    - name: Create Shared Image Gallery
+      run: |
+        az sig create \
+          --resource-group rg-canada-prod \
+          --gallery-name canadaProdSIG
+
+    - name: Create Image Definition
+      run: |
+        az sig image-definition create \
+          --resource-group rg-canada-prod \
+          --gallery-name canadaProdSIG \
+          --gallery-image-definition ubuntu-docker-nginx \
+          --publisher mycompany \
+          --offer ubuntu \
+          --sku docker-nginx \
+          --os-type Linux \
+          --hyper-v-generation V2
+
+  # -----------------------------
+  # 2. PACKER BUILD
+  # -----------------------------
   packer-build:
+    needs: sig-setup
     runs-on: ubuntu-latest
 
     steps:
@@ -44,8 +87,11 @@ jobs:
         cd packer
         packer build -var-file="pakvars.pkrvars.hcl" .
 
+  # -----------------------------
+  # 3. TERRAFORM DEPLOY
+  # -----------------------------
   terraform-deploy:
-    #needs: packer-build
+    needs: packer-build
     runs-on: ubuntu-latest
 
     steps:
