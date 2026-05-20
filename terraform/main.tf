@@ -58,6 +58,11 @@ resource "azurerm_linux_virtual_machine" "vm" {
   network_interface_ids = [
     azurerm_network_interface.nic.id
   ]
+# The os_disk MUST stay inside the resource block
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
 
   source_image_id = data.azurerm_image.custom.id
 
@@ -67,10 +72,4 @@ resource "azurerm_linux_virtual_machine" "vm" {
   }
 
   disable_password_authentication = true
-
-  # The os_disk MUST stay inside the resource block
-  os_disk {
-    caching              = "ReadWrite"
-    storage_account_type = "Standard_LRS"
-  }
 }
