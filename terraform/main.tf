@@ -69,13 +69,12 @@ resource "azurerm_linux_virtual_machine" "vm" {
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   size                = "Standard_B2s"
-  admin_username      = "azureuser"
-  network_interface_ids = [azurerm_network_interface.nic.id]
 
-  os_disk {
-    caching              = "ReadWrite"
-    storage_account_type = "Standard_LRS"
-  }
+  admin_username = "azureuser"
+
+  network_interface_ids = [
+    azurerm_network_interface.nic.id
+  ]
 
   source_image_id = data.azurerm_image.custom.id
 
@@ -85,4 +84,9 @@ resource "azurerm_linux_virtual_machine" "vm" {
   }
 
   disable_password_authentication = true
+
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
 }
