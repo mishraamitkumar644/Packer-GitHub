@@ -9,7 +9,7 @@ terraform {
 
 provider "azurerm" {
   features {}
-  subscription_id = "e397672c-2118-4f8c-918d-90f1bdb9bc73"
+  use_oidc = true
 }
 
 data "azurerm_image" "custom" {
