@@ -45,7 +45,7 @@ jobs:
         packer build -var-file="pakvars.pkrvars.hcl" .
 
   terraform-deploy:
-    needs: packer-build
+    #needs: packer-build
     runs-on: ubuntu-latest
 
     steps:
