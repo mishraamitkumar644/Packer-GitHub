@@ -67,8 +67,8 @@ resource "azurerm_linux_virtual_machine" "vm" {
   }
 
   disable_password_authentication = true
-}
 
+  # The os_disk MUST stay inside the resource block
   os_disk {
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
